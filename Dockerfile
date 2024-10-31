@@ -22,7 +22,7 @@ WORKDIR /app
 COPY --from=build /app/build .
 
 # 포트 설정
-EXPOSE 3000
+EXPOSE 80
 
 # 애플리케이션 실행
 CMD ["npm", "start"]
