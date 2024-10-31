@@ -4,23 +4,28 @@ FROM node:alpine3.18 as build
 # 작업 디렉토리 설정
 WORKDIR /app
 
-# package.json 파일과 의존성 설치 (생산 의존성만 설치)
-COPY package.json package-lock.json ./  # 두 파일 모두 복사
-RUN npm install --only=production && npm cache clean --force
+# package.json 파일과 의존성 설치
+COPY package.json package-lock.json ./  
+RUN npm install && npm cache clean --force
 
 # 나머지 소스코드 복사 및 빌드
 COPY . .
 RUN npm run build
 
-# 최종 실행 이미지
-FROM node:alpine3.18
-WORKDIR /app
+# 최종 실행 이미지 (Nginx)
+FROM nginx:1.23-alpine
 
-# 빌드된 파일, node_modules, package.json 복사
-COPY --from=build /app/build .               # 빌드된 파일 복사
-COPY --from=build /app/node_modules ./node_modules  # node_modules 복사
-COPY --from=build /app/package.json .        # package.json 복사
+# Nginx 설정 디렉토리 설정
+WORKDIR /usr/share/nginx/html
 
-# 포트 설정 및 애플리케이션 실행
-EXPOSE 3000
-CMD ["npm", "start"]
+# 기존 Nginx 기본 파일 삭제
+RUN rm -rf ./*
+
+# 빌드된 정적 파일만 복사
+COPY --from=build /app/build .
+
+# 포트 설정
+EXPOSE 80
+
+# Nginx 실행
+ENTRYPOINT ["nginx", "-g", "daemon off;"]
